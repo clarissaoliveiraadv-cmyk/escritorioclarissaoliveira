@@ -1,25 +1,15 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { FocoDoDiaItem, TaskStatus, TaskTipo, Urgencia } from "@/lib/types";
+import {
+  STATUS_LABEL,
+  TIPO_LABEL,
+  type FocoDoDiaItem,
+  type Urgencia,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  pendente: "Pendente",
-  em_andamento: "Em andamento",
-  aguardando: "Aguardando",
-  revisao: "Em revisão",
-  pronto_protocolo: "Pronto p/ protocolo",
-  finalizado: "Finalizado",
-  cancelado: "Cancelado",
-};
-
-const TIPO_LABEL: Record<TaskTipo, string> = {
-  prazo: "Prazo",
-  audiencia: "Audiência",
-  tarefa: "Tarefa",
-};
 
 const GRUPO_ORDEM: Urgencia[] = ["vencido", "hoje", "proximo"];
 
@@ -31,10 +21,10 @@ const GRUPO_LABEL: Record<Urgencia, string> = {
 };
 
 const GRUPO_ESTILO: Record<Urgencia, string> = {
-  vencido: "border-red-300 bg-red-50",
-  hoje: "border-orange-300 bg-orange-50",
-  proximo: "border-amber-200 bg-amber-50",
-  futuro: "border-slate-200 bg-white",
+  vencido: "border-red-300 bg-red-50 hover:bg-red-100",
+  hoje: "border-orange-300 bg-orange-50 hover:bg-orange-100",
+  proximo: "border-amber-200 bg-amber-50 hover:bg-amber-100",
+  futuro: "border-slate-200 bg-white hover:bg-slate-50",
 };
 
 const GRUPO_BADGE: Record<Urgencia, string> = {
@@ -110,59 +100,60 @@ export default async function FocoDoDiaPage() {
               {g.items.map((t) => (
                 <li
                   key={t.id}
-                  className={`rounded-lg border p-4 ${GRUPO_ESTILO[t.urgencia]}`}
+                  className={`flex items-start gap-3 rounded-lg border p-4 transition-colors ${GRUPO_ESTILO[t.urgencia]}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wide text-slate-500">
-                        <span className="font-semibold text-slate-700">
-                          {TIPO_LABEL[t.tipo]}
-                        </span>
-                        <span>·</span>
-                        <span>{STATUS_LABEL[t.status]}</span>
-                        <span>·</span>
-                        <span>crit. {t.criticalidade}</span>
-                      </div>
-
-                      <h3 className="mt-1 truncate text-base font-medium text-slate-900">
-                        {t.titulo}
-                      </h3>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-                        {t.cliente && (
-                          <>
-                            <span className="font-medium">{t.cliente}</span>
-                            <span className="text-slate-300">|</span>
-                          </>
-                        )}
-                        <span>Prazo: {formatPrazo(t.prazo)}</span>
-                        {t.responsavel_nome && (
-                          <>
-                            <span className="text-slate-300">|</span>
-                            <span>Resp.: {t.responsavel_nome}</span>
-                          </>
-                        )}
-                      </div>
+                  <Link
+                    href={`/tarefas/${t.id}`}
+                    className="min-w-0 flex-1 outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+                  >
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wide text-slate-500">
+                      <span className="font-semibold text-slate-700">
+                        {TIPO_LABEL[t.tipo]}
+                      </span>
+                      <span>·</span>
+                      <span>{STATUS_LABEL[t.status]}</span>
+                      <span>·</span>
+                      <span>crit. {t.criticalidade}</span>
                     </div>
 
-                    {t.pasta_url ? (
-                      <a
-                        href={t.pasta_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-                      >
-                        Abrir pasta
-                      </a>
-                    ) : (
-                      <span
-                        title="Pasta não vinculada"
-                        className="shrink-0 cursor-not-allowed select-none rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-400"
-                      >
-                        Sem pasta
-                      </span>
-                    )}
-                  </div>
+                    <h3 className="mt-1 truncate text-base font-medium text-slate-900">
+                      {t.titulo}
+                    </h3>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+                      {t.cliente && (
+                        <>
+                          <span className="font-medium">{t.cliente}</span>
+                          <span className="text-slate-300">|</span>
+                        </>
+                      )}
+                      <span>Prazo: {formatPrazo(t.prazo)}</span>
+                      {t.responsavel_nome && (
+                        <>
+                          <span className="text-slate-300">|</span>
+                          <span>Resp.: {t.responsavel_nome}</span>
+                        </>
+                      )}
+                    </div>
+                  </Link>
+
+                  {t.pasta_url ? (
+                    <a
+                      href={t.pasta_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+                    >
+                      Abrir pasta
+                    </a>
+                  ) : (
+                    <span
+                      title="Pasta não vinculada"
+                      className="shrink-0 cursor-not-allowed select-none rounded-md bg-slate-100 px-3 py-1.5 text-sm text-slate-400"
+                    >
+                      Sem pasta
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
