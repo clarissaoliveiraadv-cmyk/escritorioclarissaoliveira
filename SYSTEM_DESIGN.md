@@ -1,170 +1,221 @@
-# SYSTEM DESIGN — Escritório Clarissa Oliveira Advocacia
+# SYSTEM DESIGN — Sistema Jurídico de Execução de Prazos
+
+> Documento de design alinhado às diretrizes em [`CLAUDE.md`](./CLAUDE.md).
+> Este sistema é **ativo**: reage a atrasos, prioriza automaticamente e
+> guia a equipe pelo que é mais crítico.
+
+---
 
 ## 1. Visão Geral
 
-Este documento descreve a arquitetura e o design do sistema do site
-institucional e portal de atendimento do escritório **Clarissa Oliveira
-Advocacia**. O objetivo é oferecer presença digital profissional, captação de
-clientes e um canal seguro de comunicação entre o escritório e seus
-constituintes.
+Sistema de execução de prazos jurídicos para o escritório
+**Clarissa Oliveira Advocacia**. O foco não é registrar tarefas — é
+**garantir que prazos não sejam perdidos**, priorizando automaticamente
+o trabalho crítico e atribuindo responsabilidade clara a cada item.
 
-## 2. Objetivos
+### Não-objetivos
 
-- Apresentar o escritório, suas áreas de atuação e a equipe.
-- Permitir que potenciais clientes solicitem contato/consulta inicial.
-- Disponibilizar conteúdo jurídico (artigos, notícias) com SEO otimizado.
-- Oferecer (em fase futura) área restrita para clientes acompanharem
-  processos e documentos.
+- Não é um CRM.
+- Não é um repositório de processos completos.
+- Não substitui o sistema oficial de tribunais.
 
-## 3. Personas
+---
 
-| Persona | Descrição | Necessidades |
+## 2. Princípios
+
+1. **Ativo, não passivo** — o sistema calcula prioridade e reage a atrasos.
+2. **Toda tarefa tem dono, prazo e status válido** — invariante obrigatório.
+3. **Regra crítica vive no banco** — Supabase/Postgres concentra a lógica.
+4. **Clareza operacional** — uma tela principal mostra o que importa hoje.
+5. **Rastreabilidade total** — toda mudança relevante é registrada em log.
+
+---
+
+## 3. Stack
+
+| Camada | Escolha | Justificativa |
 |---|---|---|
-| Visitante | Pessoa pesquisando serviços jurídicos | Encontrar informações claras, contato rápido |
-| Cliente | Pessoa com processo em andamento | Acompanhar andamento, trocar documentos com segurança |
-| Administrador | Equipe do escritório | Publicar conteúdo, gerenciar leads e clientes |
+| Banco / Backend | **Supabase (Postgres + RLS + Realtime)** | Lógica centralizada, autenticação e tempo real prontos |
+| API | PostgREST (via Supabase) + Edge Functions para tarefas agendadas | Reduz código de servidor; regras vivem no banco |
+| Frontend | Next.js (React) + TypeScript | SSR/ISR para painel; tipagem forte |
+| Estilo | Tailwind CSS | Iteração rápida e consistência |
+| Auth | Supabase Auth | Integrado a RLS |
+| Agendamento | `pg_cron` + Edge Function | Recalcular criticalidade e disparar alertas |
 
-## 4. Arquitetura de Alto Nível
+---
 
-```
-┌────────────┐     HTTPS      ┌──────────────────┐
-│  Browser   │ ─────────────► │   Frontend Web   │
-│ (Cliente)  │ ◄───────────── │  (SPA/SSR)       │
-└────────────┘                └────────┬─────────┘
-                                       │ REST/JSON
-                                       ▼
-                              ┌──────────────────┐
-                              │   API Backend    │
-                              │ (Node.js / etc.) │
-                              └────────┬─────────┘
-                                       │
-                ┌──────────────────────┼──────────────────────┐
-                ▼                      ▼                      ▼
-        ┌───────────────┐     ┌────────────────┐     ┌────────────────┐
-        │  Banco Dados  │     │  Armazenamento │     │  Serviços de   │
-        │ (PostgreSQL)  │     │  de Arquivos   │     │  E-mail/SMS    │
-        └───────────────┘     └────────────────┘     └────────────────┘
-```
+## 4. Modelo de Dados
 
-## 5. Componentes
+### 4.1 Tabela `tasks` (principal)
 
-### 5.1 Frontend
-- **Stack sugerida:** Next.js (React) com renderização híbrida (SSG para
-  páginas institucionais e SSR para conteúdo dinâmico).
-- **Estilo:** Tailwind CSS, design responsivo mobile-first.
-- **Acessibilidade:** WCAG 2.1 nível AA.
-- **SEO:** metadados, sitemap.xml, dados estruturados (Schema.org `LegalService`).
-
-### 5.2 Backend / API
-- **Stack sugerida:** Node.js (NestJS) ou alternativa em Python (FastAPI).
-- **Autenticação:** JWT + refresh tokens; MFA opcional para administradores.
-- **Camadas:**
-  - Controllers (HTTP)
-  - Services (regras de negócio)
-  - Repositories (acesso a dados)
-- **Validação:** schemas (Zod / class-validator) em todas as entradas externas.
-
-### 5.3 Banco de Dados
-- **PostgreSQL** como banco relacional principal.
-- Entidades iniciais: `User`, `Lead`, `Article`, `PracticeArea`, `Case`,
-  `Document`.
-- Migrações versionadas (Prisma / TypeORM / Alembic).
-
-### 5.4 Armazenamento de Arquivos
-- Bucket S3-compatível para documentos e imagens.
-- URLs assinadas com expiração curta para acesso a documentos sensíveis.
-
-### 5.5 Comunicações
-- E-mail transacional via provedor (Resend/SendGrid).
-- Notificação opcional por WhatsApp Business API para confirmações de
-  agendamento.
-
-## 6. Modelo de Dados (visão inicial)
-
-```
-User(id, name, email, password_hash, role, created_at)
-Lead(id, name, email, phone, message, source, status, created_at)
-PracticeArea(id, slug, title, description, icon)
-Article(id, slug, title, body_md, author_id, published_at, tags)
-Case(id, client_id, title, status, court, opened_at)
-Document(id, case_id, name, storage_key, uploaded_by, uploaded_at)
-```
-
-## 7. Fluxos Principais
-
-### 7.1 Captação de Lead
-1. Visitante preenche formulário de contato.
-2. Frontend valida e envia para `POST /api/leads`.
-3. API valida, persiste em `Lead` e dispara e-mail para a equipe.
-4. Visitante recebe confirmação.
-
-### 7.2 Publicação de Artigo
-1. Administrador autentica no painel.
-2. Cria/edita artigo em Markdown.
-3. Pré-visualiza e publica; conteúdo é regenerado estaticamente (ISR).
-
-### 7.3 Área do Cliente (fase futura)
-1. Cliente faz login com MFA.
-2. Visualiza casos vinculados e documentos disponíveis.
-3. Pode enviar arquivos; equipe é notificada.
-
-## 8. Segurança
-
-- HTTPS obrigatório (HSTS).
-- Hash de senhas com Argon2id.
-- Rate limiting em endpoints públicos (formulário, login).
-- Proteção contra CSRF, XSS e injeção SQL (ORM parametrizado).
-- Logs de auditoria para ações administrativas.
-- Conformidade com a **LGPD**: política de privacidade, base legal para
-  tratamento de dados, canal para titulares exercerem direitos, prazos de
-  retenção definidos.
-- Sigilo profissional: documentos em pastas com controle estrito de acesso.
-
-## 9. Observabilidade
-
-- **Logs estruturados** (JSON) centralizados.
-- **Métricas** (latência, taxa de erro, throughput).
-- **Tracing** distribuído nas chamadas internas.
-- **Alertas** para falhas em formulários e indisponibilidade do site.
-
-## 10. Implantação
-
-- Frontend e API hospedados em provedor com CDN global (Vercel / AWS).
-- Banco gerenciado (RDS / Neon / Supabase).
-- Pipeline CI/CD: lint → testes → build → deploy em preview → deploy em produção.
-- Backups diários do banco com retenção de 30 dias.
-
-## 11. Ambientes
-
-| Ambiente | Finalidade | URL |
+| Campo | Tipo | Restrição |
 |---|---|---|
-| Local | Desenvolvimento | `http://localhost:3000` |
-| Staging | Homologação | `staging.exemplo.com` |
-| Produção | Público | `clarissaoliveira.adv.br` |
+| `id` | `uuid` | PK, default `gen_random_uuid()` |
+| `titulo` | `text` | `NOT NULL`, length > 0 |
+| `tipo` | `task_tipo` (enum) | `NOT NULL` — `prazo` \| `audiencia` \| `tarefa` |
+| `status` | `task_status` (enum) | `NOT NULL`, default `pendente` |
+| `prazo` | `timestamptz` | `NOT NULL` |
+| `responsavel_id` | `uuid` | `NOT NULL`, FK → `users.id` |
+| `criticalidade` | `int` | calculado por função/trigger; `NOT NULL` |
+| `descricao` | `text` | opcional |
+| `processo_id` | `uuid` | opcional, FK → `processos.id` |
+| `created_at` | `timestamptz` | default `now()` |
+| `updated_at` | `timestamptz` | atualizado por trigger |
+
+**Invariantes:**
+
+- `responsavel_id IS NOT NULL` — sem dono, sem tarefa.
+- `prazo IS NOT NULL`.
+- `status` restrito ao enum.
+- `criticalidade` é calculado, nunca informado pelo cliente.
+
+### 4.2 Enums
+
+```sql
+CREATE TYPE task_tipo AS ENUM ('prazo', 'audiencia', 'tarefa');
+
+CREATE TYPE task_status AS ENUM (
+  'pendente',
+  'em_andamento',
+  'aguardando',
+  'revisao',
+  'pronto_protocolo',
+  'finalizado',
+  'cancelado'
+);
+```
+
+### 4.3 Tabelas auxiliares
+
+- `users(id, nome, email, papel, ativo)`
+- `processos(id, numero_cnj, cliente, vara, status)` — opcional
+- `task_logs(id, task_id, evento, dados_antes jsonb, dados_depois jsonb, ator_id, criado_em)` — auditoria
+
+---
+
+## 5. Cálculo de Criticalidade
+
+Pontuação inteira calculada por função SQL `task_criticalidade(...)`:
+
+| Condição | Peso |
+|---|---|
+| `status` finalizado/cancelado | retorna `0` (não entra no cálculo) |
+| Prazo vencido (`prazo < now()`) | `+100` (máxima) |
+| Prazo hoje | `+90` |
+| Prazo em até 2 dias | `+60` |
+| Prazo em até 7 dias | `+30` |
+| Tipo `prazo` | `+20` |
+| Tipo `audiencia` | `+10` |
+| Tipo `tarefa` | `+0` |
+
+A função é determinística e roda:
+
+- em **trigger** `BEFORE INSERT/UPDATE` em `tasks` (recalcula ao gravar);
+- em **job agendado** (`pg_cron` a cada 15 min) que recalcula linhas
+  potencialmente afetadas pelo passar do tempo.
+
+---
+
+## 6. Triggers e Funções
+
+| Objeto | Tipo | Função |
+|---|---|---|
+| `task_criticalidade(tipo, prazo, status)` | `FUNCTION` | retorna `int` |
+| `tg_tasks_set_criticalidade` | `TRIGGER BEFORE INSERT/UPDATE` | preenche `criticalidade` e `updated_at` |
+| `tg_tasks_audit` | `TRIGGER AFTER INSERT/UPDATE/DELETE` | grava em `task_logs` |
+| `recalcular_criticalidade_global()` | `FUNCTION` | usado pelo cron |
+| `cron.schedule('recalc', '*/15 * * * *', ...)` | `pg_cron` | reexecuta o cálculo |
+
+---
+
+## 7. View `foco_do_dia` (tela principal)
+
+```sql
+CREATE OR REPLACE VIEW foco_do_dia AS
+SELECT
+  t.id,
+  t.titulo,
+  t.tipo,
+  t.status,
+  t.prazo,
+  t.responsavel_id,
+  t.criticalidade
+FROM tasks t
+WHERE t.status NOT IN ('finalizado', 'cancelado')
+  AND (
+        t.prazo <= (now() + interval '2 days')
+        OR t.criticalidade >= 60
+      )
+ORDER BY t.criticalidade DESC, t.prazo ASC;
+```
+
+Esta view alimenta a **tela inicial** do sistema. Toda a equipe começa o
+dia por ela.
+
+---
+
+## 8. Segurança (RLS)
+
+- RLS ativado em todas as tabelas.
+- `tasks`:
+  - `SELECT` permitido para usuários ativos do escritório.
+  - `INSERT/UPDATE` exigem que `responsavel_id IS NOT NULL`.
+  - `UPDATE` de `criticalidade` bloqueado para clientes — apenas trigger.
+- `task_logs`: somente leitura para gestores; escrita só via trigger.
+- Senhas, autenticação e MFA via Supabase Auth.
+
+---
+
+## 9. Escalonamento (preparação)
+
+Estrutura prevista (não obrigatória no MVP):
+
+- Tabela `alertas(task_id, nivel, enviado_em, canal)`.
+- Edge Function `verificar_atrasos`:
+  - executa a cada hora;
+  - emite alerta nível 1 ao vencer, nível 2 após 24h, nível 3 com cópia
+    para o gestor após 48h.
+- Canais previstos: e-mail, WhatsApp Business, push web.
+
+---
+
+## 10. Frontend
+
+- Tela `/foco-do-dia` (default após login) — consome a view homônima.
+- Tela `/tarefas` — lista completa com filtros (status, responsável, tipo).
+- Tela `/tarefa/:id` — detalhe + histórico (de `task_logs`).
+- Componentes destacam visualmente:
+  - vencidas (vermelho),
+  - hoje (laranja),
+  - próximas 48h (amarelo).
+- **Sem regra crítica no frontend**: ele apenas lê e exibe.
+
+---
+
+## 11. Observabilidade e Logs
+
+- `task_logs` registra todas as alterações relevantes em `tasks`.
+- Métricas-chave:
+  - tarefas vencidas por responsável,
+  - tempo médio entre criação e finalização,
+  - taxa de tarefas em `pronto_protocolo` no prazo.
+
+---
 
 ## 12. Roadmap
 
-- **Fase 1 — MVP institucional:** páginas estáticas, formulário de contato,
-  blog, SEO básico.
-- **Fase 2 — Conteúdo e captação:** painel administrativo, automação de
-  e-mails, integração com CRM.
-- **Fase 3 — Área do cliente:** autenticação, acompanhamento de processos,
-  troca segura de documentos.
-- **Fase 4 — Integrações:** consulta processual em tribunais, assinatura
-  eletrônica, agendamento online.
-
-## 13. Riscos e Mitigações
-
-| Risco | Mitigação |
+| Fase | Entrega |
 |---|---|
-| Vazamento de dados sensíveis | Criptografia em repouso e em trânsito; acesso mínimo; auditoria |
-| Indisponibilidade do site | CDN, monitoramento, ambiente redundante |
-| Conteúdo desatualizado | Revisão editorial trimestral |
-| Não conformidade com LGPD | Revisão jurídica periódica; DPO designado |
+| **1 — Núcleo** | Tabela `tasks`, enums, trigger de criticalidade, view `foco_do_dia`, CRUD básico no painel |
+| **2 — Auditoria** | `task_logs`, histórico no detalhe da tarefa |
+| **3 — Escalonamento** | Alertas progressivos por e-mail/WhatsApp |
+| **4 — Integrações** | Importar prazos do PJe/eproc; assinatura eletrônica |
 
-## 14. Decisões em Aberto
+---
 
-- Escolha definitiva do stack backend (Node vs. Python).
-- Provedor de hospedagem (Vercel + Neon vs. AWS).
-- CMS embutido vs. headless (ex.: Sanity, Strapi).
-- Necessidade real de área de cliente já no MVP.
+## 13. Decisões em Aberto
+
+- Pesos finais da função de criticalidade (validar com a equipe).
+- Granularidade do `task_logs` (todos os campos ou apenas os críticos?).
+- Política de retenção de tarefas finalizadas/canceladas.
+- Origem dos prazos: digitação manual, importação, ou ambos.
