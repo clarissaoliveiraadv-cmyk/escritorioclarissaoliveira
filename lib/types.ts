@@ -53,10 +53,21 @@ export interface Task {
   updated_at: string;
 }
 
+export type Role = "membro" | "admin";
+
 export interface UsuarioRef {
   id: string;
-  nome: string;
+  nome: string | null;
   ativo: boolean;
+}
+
+export interface UsuarioAdmin {
+  id: string;
+  nome: string | null;
+  email: string;
+  role: Role;
+  ativo: boolean;
+  created_at: string;
 }
 
 export interface TaskLog {

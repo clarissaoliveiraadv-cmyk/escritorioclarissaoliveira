@@ -42,10 +42,18 @@ export default async function FocoDoDiaPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data, error } = await supabase
-    .from("foco_do_dia")
-    .select("*")
-    .returns<FocoDoDiaItem[]>();
+  const [meuRes, focoRes] = await Promise.all([
+    supabase
+      .from("users")
+      .select("role, ativo")
+      .eq("id", user.id)
+      .maybeSingle<{ role: string; ativo: boolean }>(),
+    supabase.from("foco_do_dia").select("*").returns<FocoDoDiaItem[]>(),
+  ]);
+
+  const isAdmin =
+    meuRes.data?.ativo === true && meuRes.data?.role === "admin";
+  const { data, error } = focoRes;
 
   if (error) {
     return (
@@ -69,7 +77,7 @@ export default async function FocoDoDiaPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <header className="mb-8 flex items-end justify-between">
+      <header className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
             Foco do dia
@@ -80,6 +88,14 @@ export default async function FocoDoDiaPage() {
               : `${total} tarefa(s) exigem atenção, ordenadas por criticalidade.`}
           </p>
         </div>
+        {isAdmin && (
+          <Link
+            href="/admin/usuarios"
+            className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+          >
+            Usuários
+          </Link>
+        )}
       </header>
 
       {grupos.map((g) => (

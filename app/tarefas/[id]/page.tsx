@@ -20,7 +20,7 @@ export default async function TarefaPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [tarefaRes, logsRes, usuariosRes] = await Promise.all([
+  const [tarefaRes, logsRes, ativosRes, todosRes] = await Promise.all([
     supabase
       .from("tasks")
       .select("*")
@@ -32,10 +32,17 @@ export default async function TarefaPage({
       .eq("task_id", params.id)
       .order("criado_em", { ascending: false })
       .returns<TaskLog[]>(),
+    // Dropdown de responsável: somente ativos (filtro no banco).
     supabase
       .from("users")
       .select("id, nome, ativo")
-      .order("nome")
+      .eq("ativo", true)
+      .order("nome", { nullsFirst: false })
+      .returns<UsuarioRef[]>(),
+    // Mapa para resolver nomes em logs antigos (inclusive inativos).
+    supabase
+      .from("users")
+      .select("id, nome, ativo")
       .returns<UsuarioRef[]>(),
   ]);
 
@@ -46,11 +53,10 @@ export default async function TarefaPage({
 
   const tarefa = tarefaRes.data!;
   const logs = logsRes.data ?? [];
-  const todosUsuarios = usuariosRes.data ?? [];
-  const usuariosAtivos = todosUsuarios.filter((u) => u.ativo);
+  const usuariosAtivos = ativosRes.data ?? [];
 
   const usuariosMap = new Map<string, UsuarioRef>(
-    todosUsuarios.map((u) => [u.id, u]),
+    (todosRes.data ?? []).map((u) => [u.id, u]),
   );
 
   return (
