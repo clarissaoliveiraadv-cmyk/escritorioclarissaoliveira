@@ -88,14 +88,22 @@ export default async function FocoDoDiaPage() {
               : `${total} tarefa(s) exigem atenção, ordenadas por criticalidade.`}
           </p>
         </div>
-        {isAdmin && (
+        <nav className="flex shrink-0 items-center gap-2">
           <Link
-            href="/admin/usuarios"
-            className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            href="/dashboard"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
           >
-            Usuários
+            Dashboard
           </Link>
-        )}
+          {isAdmin && (
+            <Link
+              href="/admin/usuarios"
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            >
+              Usuários
+            </Link>
+          )}
+        </nav>
       </header>
 
       {grupos.map((g) => (

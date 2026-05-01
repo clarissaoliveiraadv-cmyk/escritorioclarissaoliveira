@@ -95,3 +95,24 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   finalizado: "Finalizado",
   cancelado: "Cancelado",
 };
+
+export interface ResponsavelCarga {
+  responsavel_id: string;
+  responsavel_nome: string;
+  qtd: number;
+}
+
+export interface ClienteCarga {
+  cliente: string;
+  qtd: number;
+}
+
+export interface DashboardResumo {
+  vencidas_total: number;
+  vencidas_por_responsavel: ResponsavelCarga[];
+  hoje_total: number;
+  criticas_total: number;
+  paradas_total: number;
+  carga_por_responsavel: ResponsavelCarga[];
+  top_clientes: ClienteCarga[];
+}
