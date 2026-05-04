@@ -47,6 +47,7 @@ export async function atualizarTarefa(
 
   revalidatePath(`/tarefas/${id}`);
   revalidatePath("/foco-do-dia");
+  revalidatePath("/dashboard");
 
   return { ok: true };
 }
