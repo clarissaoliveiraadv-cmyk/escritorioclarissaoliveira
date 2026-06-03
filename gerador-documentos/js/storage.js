@@ -79,7 +79,14 @@ window.Store = (function () {
   }
 
   // ---- Escritório ----
-  function getEscritorio() { return read(KEYS.escritorio, {}); }
+  function getEscritorio() {
+    let e = read(KEYS.escritorio, null);
+    if (!e) {
+      e = Object.assign({}, window.ESCRITORIO_DEFAULT || {});
+      write(KEYS.escritorio, e);
+    }
+    return e;
+  }
   function saveEscritorio(obj) { write(KEYS.escritorio, obj); }
 
   return {

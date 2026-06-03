@@ -66,9 +66,29 @@ window.Render = (function () {
     return html.join("\n");
   }
 
+  // Cabeçalho com o logo/timbre do escritório.
+  function logoHtml(maxWidth) {
+    if (!window.TIMBRE_LOGO) return "";
+    return `<div class="timbre-topo" style="text-align:center;margin-bottom:24px;">
+      <img src="${window.TIMBRE_LOGO}" alt="Timbre" style="max-width:${maxWidth || "320px"};width:60%;height:auto;" /></div>`;
+  }
+
+  // Rodapé com os dados do escritório (puxados da aba Escritório).
+  function rodapeHtml(escritorio) {
+    const e = escritorio || {};
+    const linha1 = e.endereco_escritorio || "";
+    const linha2 = [
+      e.telefone_escritorio ? "Tel.: " + e.telefone_escritorio : "",
+      e.email_escritorio || "",
+    ].filter(Boolean).join("  ·  ");
+    if (!linha1 && !linha2) return "";
+    return `<div class="timbre-rodape" style="margin-top:40px;padding-top:8px;border-top:1px solid #999;text-align:center;font-size:9pt;color:#444;">
+      ${escapeHtml(linha1)}${linha1 && linha2 ? "<br/>" : ""}${escapeHtml(linha2)}</div>`;
+  }
+
   // HTML para a pré-visualização (com vazios destacados).
   function previewHtml(corpo, dados) {
-    return toHtml(fill(corpo, dados, true));
+    return logoHtml("280px") + toHtml(fill(corpo, dados, true)) + rodapeHtml(dados);
   }
 
   // Texto puro (para copiar / WhatsApp): remove marcadores de formatação.
@@ -89,12 +109,12 @@ window.Render = (function () {
 <head><meta charset="utf-8"><title>${escapeHtml(titulo)}</title>
 <style>
   @page { margin: 2.5cm; }
-  body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.5; text-align: justify; }
-  h1 { font-size: 13pt; text-align: center; text-transform: uppercase; }
-  h2 { font-size: 12pt; }
+  body { font-family: "Century Schoolbook", "Times New Roman", serif; font-size: 12pt; line-height: 1.5; text-align: justify; }
+  h1 { font-size: 13pt; text-align: center; text-transform: uppercase; text-decoration: underline; }
+  h2 { font-size: 12pt; text-align: center; }
   p.assinatura { text-align: center; }
 </style></head>
-<body>${body}</body></html>`;
+<body>${logoHtml("320px")}${body}${rodapeHtml(dados)}</body></html>`;
     return new Blob(["﻿", doc], { type: "application/msword" });
   }
 
@@ -117,12 +137,13 @@ window.Render = (function () {
     w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escapeHtml(titulo)}</title>
 <style>
   @page { margin: 2.5cm; }
-  body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.6; text-align: justify; color: #000; }
-  h1 { font-size: 14pt; text-align: center; text-transform: uppercase; }
-  h2 { font-size: 12pt; }
+  body { font-family: "Century Schoolbook", "Times New Roman", serif; font-size: 12pt; line-height: 1.6; text-align: justify; color: #000; }
+  h1 { font-size: 14pt; text-align: center; text-transform: uppercase; text-decoration: underline; }
+  h2 { font-size: 12pt; text-align: center; }
   p { margin: 0 0 10px; }
   p.assinatura { text-align: center; margin-top: 30px; }
-</style></head><body>${body}</body></html>`);
+  .timbre-topo img { max-width: 320px; }
+</style></head><body>${logoHtml("320px")}${body}${rodapeHtml(dados)}</body></html>`);
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);

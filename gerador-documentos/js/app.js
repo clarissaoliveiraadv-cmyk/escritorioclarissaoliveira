@@ -122,7 +122,9 @@
   }
 
   function getDados() {
-    const dados = {};
+    // base com os dados do escritório (para o timbre/rodapé), sobrescritos
+    // pelo que estiver no formulário.
+    const dados = Object.assign({}, Store.getEscritorio());
     $$(".campo-input").forEach((inp) => { dados[inp.dataset.campo] = inp.value; });
     return dados;
   }

@@ -7,6 +7,9 @@ contratos de honorários, peças simples) a partir de modelos com campos variáv
 - ✅ Funciona **offline** (basta abrir o arquivo).
 - ✅ Os dados (clientes, modelos, histórico) ficam **salvos neste computador/navegador**.
 - ✅ Gera **Word (.doc)**, **PDF** (impressão) e **texto** para WhatsApp.
+- ✅ Já vem com o **timbre (logo Clarissa Oliveira)** no topo e o **rodapé do
+  escritório**, além dos **documentos reais** (Procuração, Declaração de
+  Insuficiência, Contratos de Honorários trabalhista e previdenciário).
 
 ---
 
