@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Documentos — Clarissa Oliveira Advocacia</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">CO</span>
+      <div>
+        <h1>Gerador de Documentos</h1>
+        <p class="brand-sub">Clarissa Oliveira Advocacia &middot; uso interno</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="gerar">Gerar</button>
+      <button class="tab" data-tab="modelos">Modelos</button>
+      <button class="tab" data-tab="clientes">Clientes</button>
+      <button class="tab" data-tab="historico">Histórico</button>
+      <button class="tab" data-tab="escritorio">Escritório</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <!-- ================= GERAR ================= -->
+    <section class="view active" id="view-gerar">
+      <div class="gerar-grid">
+        <div class="panel">
+          <h2>1. Escolha o modelo</h2>
+          <label class="field">
+            <span>Modelo</span>
+            <select id="gerar-modelo"></select>
+          </label>
+          <label class="field">
+            <span>Cliente (preenche os dados automaticamente)</span>
+            <select id="gerar-cliente">
+              <option value="">— Sem cliente / preencher manualmente —</option>
+            </select>
+          </label>
+
+          <h2>2. Preencha os campos</h2>
+          <div id="gerar-campos" class="campos-wrap">
+            <p class="empty">Selecione um modelo para ver os campos.</p>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="btn-word">Baixar Word (.doc)</button>
+            <button class="btn" id="btn-pdf">Imprimir / Salvar PDF</button>
+            <button class="btn" id="btn-copiar">Copiar texto</button>
+            <button class="btn btn-ghost" id="btn-salvar-hist">Salvar no histórico</button>
+          </div>
+        </div>
+
+        <div class="panel preview-panel">
+          <div class="preview-head">
+            <h2>Pré-visualização</h2>
+            <span id="preview-status" class="preview-status"></span>
+          </div>
+          <div id="preview" class="documento"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODELOS ================= -->
+    <section class="view" id="view-modelos">
+      <div class="view-head">
+        <h2>Biblioteca de modelos</h2>
+        <button class="btn btn-primary" id="btn-novo-modelo">+ Novo modelo</button>
+      </div>
+      <div id="modelos-lista" class="cards"></div>
+    </section>
+
+    <!-- ================= CLIENTES ================= -->
+    <section class="view" id="view-clientes">
+      <div class="view-head">
+        <h2>Clientes</h2>
+        <button class="btn btn-primary" id="btn-novo-cliente">+ Novo cliente</button>
+      </div>
+      <div id="clientes-lista" class="cards"></div>
+    </section>
+
+    <!-- ================= HISTÓRICO ================= -->
+    <section class="view" id="view-historico">
+      <div class="view-head">
+        <h2>Histórico de documentos gerados</h2>
+        <span id="hist-count" class="muted"></span>
+      </div>
+      <div id="historico-lista" class="cards"></div>
+    </section>
+
+    <!-- ================= ESCRITÓRIO ================= -->
+    <section class="view" id="view-escritorio">
+      <div class="view-head">
+        <h2>Dados do escritório</h2>
+        <span class="muted">Preenchidos automaticamente em todos os documentos.</span>
+      </div>
+      <div class="panel" id="escritorio-form"></div>
+    </section>
+  </main>
+
+  <!-- ================= MODAL ================= -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="data/fields.js"></script>
+  <script src="data/templates.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
