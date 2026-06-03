@@ -4,7 +4,7 @@
 #
 # Observação: este arquivo na raiz existe só para o deploy do gerador.
 # Ele NÃO afeta o sistema Next.js do repositório.
-name = "gerador-documentos"
+name = "escritorioclarissaoliveira"
 compatibility_date = "2024-11-01"
 
 [assets]
