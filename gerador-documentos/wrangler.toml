@@ -1,7 +1,7 @@
 # Configuração para publicar o Gerador de Documentos como site estático
 # no Cloudflare (Workers com Static Assets). Não há build: o Cloudflare
 # apenas serve os arquivos desta pasta.
-name = "gerador-documentos"
+name = "escritorioclarissaoliveira"
 compatibility_date = "2024-11-01"
 
 # Serve todos os arquivos desta pasta (index.html, css, js, data) como site.
